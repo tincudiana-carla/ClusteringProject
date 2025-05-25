@@ -119,85 +119,59 @@ if st.button("Rulează clustering"):
             plt_obj = plot_dbscan_scatter(X, labels, 'Clustere DBSCAN (reducere PCA)')
             st.pyplot(plt_obj)
 
-    elif metoda_clustering == 'OPTICS':
 
-
-        # rulare OPTICS
-        start_time = time.time()
-        labels, reachability, order = run_optics(df.iloc[:, :-1].values, min_samples=min_samples, xi=xi,
-                                                 min_cluster_size=min_cluster_size / 100)
-        time_optics = time.time() - start_time
-
-        # afișare rezultate
-        df['Cluster OPTICS'] = np.nan
-        df.loc[df.index[order], 'Cluster OPTICS'] = labels[np.argsort(order)]
-
-        st.write(f"Timp clustering OPTICS: {time_optics:.4f} secunde")
-
-        # Graficul reachability
-        plt_fig = plot_optics_reachability(reachability, order, 'Reachability Plot - OPTICS')
-        st.pyplot(plt_fig)
-
-        # Afișare cluster
-        X = df.iloc[:, :-1].values
-        labels = np.array(labels)
-        plt_obj = plot_dbscan_scatter(X, labels, 'Clustere OPTICS (reducere PCA)')
-        st.pyplot(plt_obj)
-    elif metoda_clustering == 'EM':
-        data, true_labels = make_blobs(n_samples=150, centers=3, cluster_std=5.5, n_features=15, random_state=42)
-        X_reduc = PCA(n_components=2).fit_transform(data)
-        labels, means, covs, best_n = fit_gmm_select_components(X_reduc, max_components=10, criterion='bic')
-
-        # Plot cu GMM
-        fig = plot_gmm(X_reduc, labels, means, covs,
-                       f"EM Clustering - Covariance={covariance_type}, Components={best_n}", covariance_type)
-        st.pyplot(fig)
-
-    elif metoda_clustering == 'KMeans':
-        data, true_labels = make_blobs(n_samples=150, centers=3, cluster_std=5.5, n_features=15, random_state=42)
-        X_reduc = PCA(n_components=2).fit_transform(data)
-
-        labels, centers = kmeans_clustering(X_reduc, n_clusters=n_clusters)
-        fig = plot_kmeans(X_reduc, labels, centers, f"KMeans Clustering (K={n_clusters})")
-        st.pyplot(fig)
-
-    elif metoda_clustering == 'FuzzyCMeans':
-        data, true_labels = make_blobs(n_samples=150, centers=3, cluster_std=5.5, n_features=15, random_state=42)
-        X_reduc = PCA(n_components=2).fit_transform(data)
-        labels, centers, u = fuzzy_cmeans_clustering(X_reduc, n_clusters=n_clusters)
-        fig = plot_fuzzy(X_reduc, labels, u, f"Fuzzy C-Means (K={n_clusters})")
-        st.pyplot(fig)
     elif metoda_clustering == "Experimental Data":
-        # Use the correct DataFrame loaded from CSV
-        exp = ExperimentalData(df_csv)  # <-- updated to use df_csv, not df
+
+        exp = ExperimentalData(df_csv)
+
         exp.preprocess()
+
         exp.display_normalized_data()
-        results = exp.run_all_methods(n_clusters=7)
+
+        results = exp.run_all_methods(n_clusters=4)
+
+        # Afișăm scorurile silhouette pentru toate metodele
 
         st.write("Silhouette scores:")
+
         for method, score in results['silhouette'].items():
             st.write(f"{method}: {score:.3f}")
 
+        # 1. Clustering KMeans
+
         labels_km, centers_km = results['kmeans']
+
         exp.plot_kmeans(labels_km, centers_km, 'Clustering KMeans')
 
+        # 2. Dendrograma Hierarchical
+
         labels_hier, linked = results['hierarchical']
+
         exp.plot_dendrogram(linked, 'Dendrograma Hierarchical')
 
+        # 3. Clustere DBSCAN
+
         labels_db = results['dbscan']
+
         exp.plot_dbscan_scatter(labels_db, 'DBSCAN Clusters')
 
+        # 4. Clustere OPTICS
+
         labels_optics = results['optics']
+
         exp.plot_optics_scatter(labels_optics, 'OPTICS Clusters')
 
+        # 5. Clustere GMM
+
         labels_gmm = results['gmm']
+
         exp.plot_gmm(labels_gmm, 'Gaussian Mixture Model Clustering')
 
+        # 6. Clustering după caracteristici (exemplu cu DBSCAN)
+
         labels = exp.dbscan_clustering()
+
         exp.plot_dbscan_by_features(labels, feature_x='sleep_hours', feature_y='netflix_hours')
-
-
-
 
 
 

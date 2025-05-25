@@ -2,22 +2,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans, DBSCAN, OPTICS  # Added OPTICS here
 import scipy.cluster.hierarchy as sch
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, accuracy_score
 from sklearn.decomposition import PCA
 import streamlit as st
 from sklearn.mixture import GaussianMixture  # <-- nou
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.svm import SVC
+
 
 class ExperimentalData:
     def __init__(self, df):
-        self.df_all = df.copy()  # Keep the full version for reference
-        self.df = df.select_dtypes(include=[np.number])  # Only numeric for clustering
+        self.df_all = df.copy()
+        df_processed = df.copy()
+        for col in df_processed.select_dtypes(include=[object]).columns:
+            le = LabelEncoder()
+            df_processed[col] = le.fit_transform(df_processed[col].astype(str))
+        self.df = df_processed.select_dtypes(include=[np.number])
         self.X = self.df.values
         self.X_scaled = None
+        self.y = None  # variabila țintă pentru supervised
+
+    def set_target(self, target_column_name):
+        if target_column_name in self.df_all.columns:
+            self.y = self.df_all[target_column_name]
+        else:
+            print(f"Coloana '{target_column_name}' nu există în DataFrame.")
 
     def preprocess(self):
-        from sklearn.preprocessing import StandardScaler
         scaler = StandardScaler()
         self.X_scaled = scaler.fit_transform(self.X)
+
+    def train_and_evaluate(self, test_size=0.2):
+        if self.y is None:
+            print("Setează coloana țintă cu set_target() înainte de antrenare.")
+            return
+        self.preprocess()
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.X_scaled, self.y, test_size=test_size, random_state=42)
+        model = SVC()
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        print(f"Accuracy: {accuracy:.2f}")
+        return model
 
     def hierarchical_clustering(self, n_clusters, metric='euclidean'):
         linked = sch.linkage(self.X_scaled, method='ward', metric=metric)
@@ -49,7 +77,7 @@ class ExperimentalData:
         plt.title(title)
         st.pyplot(plt)
 
-    def dbscan_clustering(self, eps=1.7, min_samples=3, metric='euclidean'):
+    def dbscan_clustering(self, eps=3, min_samples=5):
         model = DBSCAN(eps=eps, min_samples=min_samples)
         labels = model.fit_predict(self.X_scaled)
         return labels
