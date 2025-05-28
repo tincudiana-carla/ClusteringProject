@@ -21,7 +21,6 @@ from clustering_methods import (hierarchical_clustering,
                                 fuzzy_cmeans_clustering,
                                 plot_fuzzy)
 
-# Date initiale
 np.random.seed(42)
 genes = ['Gene{}'.format(i + 1) for i in range(100)]
 samples = ['Sample{}'.format(i + 1) for i in range(15)]
@@ -31,7 +30,6 @@ df = pd.DataFrame(data, index=genes, columns=samples)
 df_csv = pd.read_csv("student_habits_performance.csv")
 st.title("Clustering cu distanțe și comparare timp")
 
-# Adaugă un meniu în topbar
 metoda_clustering = st.selectbox(
     'Selectează metoda de clustering',
     ('Hierarchical Clustering', 'DBSCAN', 'OPTICS', 'EM' , 'KMeans', 'FuzzyCMeans', 'Experimental Data'),
@@ -51,6 +49,7 @@ if metoda_clustering == 'OPTICS':
     min_cluster_size = st.slider('Min Cluster Size (%)', 1, 50, 5, key='optics_mcs')
 
 if metoda_clustering == 'EM':
+    n_components = st.slider("Număr componente GMM", 1, 10, 3)
     covariance_type = st.selectbox('Covariance Type', ('full', 'tied', 'diag', 'spherical'), key='cov_type_select')
 if metoda_clustering == 'KMeans' or metoda_clustering == 'FuzzyCMeans':
     n_clusters = st.slider("Număr de clustere", 2, 10, 3)
@@ -120,6 +119,45 @@ if st.button("Rulează clustering"):
             st.pyplot(plt_obj)
 
 
+
+    elif metoda_clustering == 'EM':
+
+        data, true_labels = make_blobs(n_samples=100, centers=3, cluster_std=0.5, n_features=15, random_state=42)
+        np.random.shuffle(data)
+        df = pd.DataFrame(data, index=genes, columns=samples)
+        start_time = time.time()
+        model = GaussianMixture(n_components=n_components, covariance_type=covariance_type, random_state=42)
+
+        labels = model.fit_predict(df)
+
+        t = time.time() - start_time
+        df['Cluster GMM'] = labels
+        st.write(f"Timp clustering GMM: {t:.4f} secunde")
+        plt.figure(figsize=(10, 6))
+        pca = PCA(n_components=2)
+
+        X_pca = pca.fit_transform(df.iloc[:, :-1])  # fara coloana cu cluster
+
+        plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='Set2', s=30)
+
+        plt.title('Clustering GMM')
+
+        st.pyplot(plt)
+    elif metoda_clustering == 'OPTICS':
+
+        data, true_labels = make_blobs(n_samples=100, centers=3, cluster_std=0.5, n_features=15, random_state=42)
+        np.random.shuffle(data)
+        df = pd.DataFrame(data, index=genes, columns=samples)
+        start_time = time.time()
+        labels, reachability, ordering = run_optics(df, min_samples=min_samples, xi=xi,
+                                                    min_cluster_size=min_cluster_size)
+        t = time.time() - start_time
+        df['Cluster OPTICS'] = labels
+        st.write(f"Timp clustering OPTICS: {t:.4f} secunde")
+        plt_obj = plot_optics_reachability(reachability, ordering, 'Reachability - OPTICS')
+
+        st.pyplot(plt_obj)
+
     elif metoda_clustering == "Experimental Data":
 
         exp = ExperimentalData(df_csv)
@@ -130,7 +168,7 @@ if st.button("Rulează clustering"):
 
         results = exp.run_all_methods(n_clusters=4)
 
-        # Afișăm scorurile silhouette pentru toate metodele
+        # scorurile silhouette pentru toate metodele
 
         st.write("Silhouette scores:")
 
@@ -168,10 +206,11 @@ if st.button("Rulează clustering"):
         exp.plot_gmm(labels_gmm, 'Gaussian Mixture Model Clustering')
 
         # 6. Clustering după caracteristici (exemplu cu DBSCAN)
-
         labels = exp.dbscan_clustering()
 
         exp.plot_dbscan_by_features(labels, feature_x='sleep_hours', feature_y='netflix_hours')
+    else:
+        st.write("Această metodă nu este activată în această versiune.")
 
 
 

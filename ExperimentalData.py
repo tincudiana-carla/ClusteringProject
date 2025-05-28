@@ -119,7 +119,6 @@ class ExperimentalData:
         plt.title(title)
         st.pyplot(plt)
 
-    # New OPTICS clustering method
     def optics_clustering(self, min_samples=5, xi=0.02, min_cluster_size=5):
         model = OPTICS(min_samples=min_samples, xi=xi, min_cluster_size=min_cluster_size)
         labels = model.fit_predict(self.X_scaled)
@@ -158,16 +157,11 @@ class ExperimentalData:
                                 title='DBSCAN Clusters by Features'):
         import seaborn as sns
         import pandas as pd
-
-        # Reconstruct scaled DataFrame for reference to column names
         df_scaled = pd.DataFrame(self.X_scaled, columns=self.df.columns)
         df_scaled['Cluster'] = labels
-
-        # Separate outliers
         outliers = df_scaled[df_scaled['Cluster'] == -1]
         clusters = df_scaled[df_scaled['Cluster'] != -1]
 
-        # Plot
         plt.figure(figsize=(10, 6))
         sns.scatterplot(
             data=clusters,
@@ -201,7 +195,7 @@ class ExperimentalData:
         # GMM
         labels_gmm = self.gmm_clustering(n_clusters)
 
-        # OPTICS (new)
+        # OPTICS
         labels_optics = self.optics_clustering()
 
         # Silhouette
@@ -234,7 +228,6 @@ class ExperimentalData:
 
         df_scaled = pd.DataFrame(self.X_scaled, columns=self.df.columns)
 
-        # Merge scaled numeric data with the original non-numeric columns
         non_numeric_cols = self.df_all.drop(columns=self.df.columns)
         df_combined = pd.concat([non_numeric_cols.reset_index(drop=True), df_scaled], axis=1)
 

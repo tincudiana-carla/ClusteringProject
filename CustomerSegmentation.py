@@ -1,8 +1,6 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.spatial.distance import squareform, pdist
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
@@ -22,7 +20,7 @@ data_pca = pca.fit_transform(data_scaled)
 
 # 4. Metode linkage
 linkage_methods = ['single', 'complete', 'average']
-num_clusters = 4  # Setează numărul de clustere
+num_clusters = 4
 
 for method in linkage_methods:
     # 5. Linkage și dendrogramă
@@ -40,7 +38,6 @@ for method in linkage_methods:
     # 6. Extrage etichetele clustere
     cluster_labels = fcluster(linked, num_clusters, criterion='maxclust')
 
-    # Plot clustere PCA într-o figură separată
     plt.figure(figsize=(8, 5))
     sns.scatterplot(x=data_pca[:, 0], y=data_pca[:, 1], hue=cluster_labels, palette='tab10', legend='full')
     plt.title(f"Clustere PCA - {method.capitalize()} Linkage")
